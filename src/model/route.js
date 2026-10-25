@@ -42,6 +42,7 @@ async function liveClassify(claims) {
   const list = claims.map((c, i) => `${i}. [${c.kind}] ${c.text} (source: ${c.source})`).join('\n');
   const out = await chatCompletion({
     model: config.model.fast,
+    maxTokens: config.model.fastMaxTokens,
     system:
       'You classify evidence items for a dependency risk brief. Reply with JSON only: an array of objects {"index": number, "riskTags": string[]} where riskTags is a subset of CRITICAL, HIGH, MEDIUM, LOW, INFO. No prose.',
     user: `Classify each evidence item:\n${list}`,
@@ -90,6 +91,7 @@ async function liveVerdict(core, classifiedClaims) {
   const contra = core.contradictions.map((c) => `- ${c}`).join('\n') || '- none';
   const out = await chatCompletion({
     model: config.model.strong,
+    maxTokens: config.model.strongMaxTokens,
     system:
       'You write the verdict section of a dependency risk brief. Be direct and specific. Reply with JSON only: {"label": string, "score": number 0-100, "summary": string, "rationale": string[]}. The label is one of: "Adopt with routine monitoring", "Adopt with caution", "Avoid, or pin and patch first". Ground every rationale point in the supplied evidence. Never invent facts.',
     user: `Repository: ${core.subject.owner}/${core.subject.repo}\nSignals: ${JSON.stringify(core.signals)}\nEvidence:\n${evidence}\nContradictions flagged:\n${contra}`,

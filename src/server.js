@@ -30,7 +30,7 @@ const server = createServer(async (req, res) => {
     res.end(JSON.stringify({
       ok: true,
       tool: 'DepVet',
-      version: '0.6.0',
+      version: '0.7.0',
       modelMode: modelConfigured() ? 'live' : 'mock',
       webEvidence: tavilyConfigured() ? 'live' : 'not-configured',
     }));

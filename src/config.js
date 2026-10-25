@@ -18,6 +18,11 @@ function loadLocalEnv() {
 }
 loadLocalEnv();
 
+function positiveInt(value, fallback) {
+  const n = Number.parseInt(value, 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
 export const config = {
   port: Number(process.env.PORT || 8730),
   model: {
@@ -25,6 +30,12 @@ export const config = {
     apiKey: process.env.MODEL_API_KEY || '',
     fast: process.env.MODEL_FAST || 'nvidia/nemotron-3-nano',
     strong: process.env.MODEL_STRONG || 'nvidia/nemotron-3-ultra',
+    // Output budgets per stage. Nemotron models reason before they
+    // answer, and the reasoning shares the output budget, so a small
+    // cap can leave no room for visible content at all. Keep these
+    // generous. Env overridable for tuning or for cheaper endpoints.
+    fastMaxTokens: positiveInt(process.env.MODEL_FAST_MAX_TOKENS, 2000),
+    strongMaxTokens: positiveInt(process.env.MODEL_STRONG_MAX_TOKENS, 3000),
   },
   githubToken: process.env.GITHUB_TOKEN || '',
   tavilyApiKey: process.env.TAVILY_API_KEY || '',
