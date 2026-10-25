@@ -1,0 +1,16 @@
+{
+  "description": "Paste a GitHub repo link or a package name, get a sourced risk brief before you adopt that dependency.",
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "name": "depvet",
+  "private": false,
+  "scripts": {
+    "brief": "node src/cli.js",
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "type": "module",
+  "version": "0.6.0"
+}

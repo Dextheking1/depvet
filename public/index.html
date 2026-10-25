@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DepVet: know a dependency before you adopt it</title>
+<meta name="description" content="Paste a GitHub repo link. DepVet returns a sourced risk brief: security history, maintenance health, licence, and a clear adopt, caution, or avoid verdict. Every claim carries its source.">
+<meta name="theme-color" content="#0b0f14">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DepVet">
+<meta property="og:title" content="DepVet: know a dependency before you adopt it">
+<meta property="og:description" content="A sourced risk brief before you adopt a dependency. Every claim carries its source, conflicts stay visible, and the verdict is clear: adopt, caution, or avoid.">
+<meta property="og:url" content="https://depvet.benihacking.top/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="DepVet: know a dependency before you adopt it">
+<meta name="twitter:description" content="A sourced risk brief before you adopt a dependency. Every claim carries its source.">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+  :root {
+    --bg: #0b0f14; --panel: #111826; --panel2: #0e141f; --line: #223047;
+    --text: #e6edf3; --muted: #9aa7b4; --soft: #c9d6e2; --green: #76b900; --green-soft: #7ee787;
+    --lime: #a3e635; --amber: #e3a008; --amber-bg: #2b2003; --red: #e5534b;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; background: radial-gradient(880px 440px at 50% -160px, rgba(118, 185, 0, 0.075), rgba(11, 15, 20, 0) 68%), var(--bg); color: var(--text); line-height: 1.5; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background-image: linear-gradient(rgba(230, 237, 243, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(230, 237, 243, 0.05) 1px, transparent 1px); background-size: 44px 44px; }
+  main { position: relative; max-width: 1120px; margin: 0 auto; padding: 40px 24px 48px; }
+  .hero { text-align: left; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand svg { width: 52px; height: 52px; flex: none; }
+  .brand .name { font-size: 36px; font-weight: 800; letter-spacing: -0.035em; }
+  .brand .name em { font-style: normal; color: var(--green); }
+  h1.headline { font-size: clamp(36px, 4.6vw, 46px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.08; margin: 28px 0 10px; }
+  .subline { font-size: 16px; font-weight: 400; color: var(--lime); margin: 0 0 10px; }
+  .lede { color: var(--muted); font-size: 15.5px; max-width: 760px; margin: 0 0 26px; }
+  form { display: flex; gap: 8px; margin-bottom: 12px; }
+  .field { position: relative; flex: 1; }
+  .field svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; stroke: var(--muted); pointer-events: none; }
+  .field input { width: 100%; padding: 13px 14px 13px 44px; border-radius: 10px; border: 1px solid #2a3644; background: var(--panel); color: var(--text); font-size: 16px; transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease; }
+  .field input:focus { outline: 2px solid var(--green); outline-offset: 1px; border-color: transparent; box-shadow: 0 0 0 4px rgba(118, 185, 0, 0.12); }
+  button { font: inherit; }
+  button.go { padding: 13px 34px; border: 0; border-radius: 10px; background: var(--green); color: #0b0f14; font-weight: 700; cursor: pointer; font-size: 16px; white-space: nowrap; transition: transform 150ms ease, filter 150ms ease, box-shadow 150ms ease; will-change: transform; }
+  button.go:hover { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 8px 22px rgba(118, 185, 0, 0.16); }
+  button.go:active { transform: translateY(0) scale(0.98); box-shadow: none; }
+  button.go:focus-visible, .chip:focus-visible, a:focus-visible { outline: 2px solid var(--green-soft); outline-offset: 3px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 26px; }
+  .chips .lbl { color: var(--soft); font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; }
+  .chip { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; font-size: 15px; cursor: pointer; transition: transform 150ms ease, border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease; will-change: transform; }
+  .chip:hover { border-color: var(--green); background: #131e2e; transform: translateY(-1px); box-shadow: 0 7px 18px rgba(0, 0, 0, 0.18); }
+  .chip:active { transform: translateY(0) scale(0.98); box-shadow: none; }
+  .chip b { font-weight: 700; }
+  .chip .ok, .chip .bad { color: var(--soft); display: inline-flex; align-items: center; gap: 6px; }
+  .chip .ok::before, .chip .bad::before { content: ""; width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .chip .ok::before { background: var(--green-soft); }
+  .chip .bad::before { background: #ff6b61; box-shadow: 0 0 0 2px rgba(255, 107, 97, 0.18); }
+  .how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 6px 0 30px; align-items: stretch; }
+  .how .step { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; height: 100%; display: flex; flex-direction: column; }
+  .how .n { color: var(--green); font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.6px; }
+  .how h3 { margin: 6px 0 6px; font-size: 15.5px; }
+  .how p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 18px 16px; margin: 14px 0; }
+  .sample .s-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .sample .s-head h3 { margin: 0; }
+  .sample .s-body { display: flex; gap: 20px; align-items: flex-start; margin-top: 10px; }
+  .sample .s-label { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: var(--green-soft); margin: 2px 0 4px; }
+  .ringwrap.mini { width: 72px; }
+  .ringbox.mini { width: 72px; height: 72px; }
+  .ringnum.mini { font-size: 20px; }
+  .card h3 { margin-top: 0; margin-bottom: 10px; letter-spacing: -0.012em; }
+  .card ul { margin: 8px 0 4px; padding-left: 20px; }
+  .card ul.rows { list-style: none; padding-left: 0; }
+  .reveal { animation: card-in 560ms cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: var(--d, 0ms); }
+  @keyframes card-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .verdict { display: flex; gap: 24px; align-items: flex-start; }
+  .verdict.band-adopt { border-color: var(--green); }
+  .verdict.band-caution { border-color: var(--amber); }
+  .verdict.band-avoid { border-color: var(--red); }
+  .ringwrap { flex: none; width: 128px; text-align: center; }
+  .ringbox { position: relative; width: 128px; height: 128px; }
+  .ring { transform: rotate(-90deg); display: block; }
+  .ring .track { stroke: #223047; }
+  .ring .ringval { transition: stroke-dashoffset 1050ms cubic-bezier(0.22, 1, 0.36, 1); will-change: stroke-dashoffset; }
+  .ring .val-adopt { stroke: var(--green); }
+  .ring .val-caution { stroke: var(--amber); }
+  .ring .val-avoid { stroke: var(--red); }
+  .ringnum { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+  .ringcap { color: var(--muted); font-size: 12.5px; margin-top: 6px; }
+  .verdict .label { font-size: 26px; font-weight: 800; letter-spacing: -0.022em; margin: 2px 0 6px; }
+  .verdict .label-adopt { color: var(--green-soft); }
+  .verdict .label-caution { color: #ffd97a; }
+  .verdict .label-avoid { color: #ff9c9c; }
+  .mock { background: var(--panel2); border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: 7px 12px; margin: 12px 0; font-size: 13px; }
+  a { color: var(--green-soft); }
+  li { margin: 6px 0; }
+  li.ev { display: flex; gap: 10px; align-items: baseline; margin: 8px 0; }
+  .evtext { flex: 1 1 auto; min-width: 0; }
+  .evmeta { flex: none; display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+  .cite { color: var(--lime); font-size: 12px; font-weight: 600; margin-right: 4px; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; border-radius: 999px; padding: 2px 8px; border: 1px solid #2a3644; color: var(--soft); }
+  .pill-high, .pill-critical { color: #ff9c9c; border-color: #7a2d29; background: rgba(229, 83, 75, 0.12); }
+  .pill-moderate { color: #ffd97a; border-color: #8a6d1f; background: rgba(227, 160, 8, 0.12); }
+  .pill-low { color: var(--muted); border-color: #2a3644; background: rgba(154, 167, 180, 0.08); }
+  .conflict { border-left: 4px solid var(--amber); }
+  .flag { display: inline-block; background: var(--amber-bg); color: #ffd97a; border: 1px solid var(--amber); border-radius: 6px; padding: 1px 8px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 8px; }
+  .err { color: #ff9c9c; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .progress { color: var(--muted); font-size: 15px; margin: 18px 0; }
+  .stagebar { height: 3px; background: #1b2635; border-radius: 2px; overflow: hidden; margin-bottom: 12px; }
+  .stagebar-fill { height: 100%; width: 0; background: var(--green); border-radius: 2px; transition: width 500ms ease; }
+  .stage-row { display: flex; align-items: center; gap: 10px; min-height: 28px; opacity: 0; transform: translateY(6px); transition: opacity 360ms ease, transform 360ms ease, color 360ms ease; }
+  .stage-row.on { opacity: 1; transform: translateY(0); }
+  .stage-row.done { color: #718093; }
+  .stage-row.active { color: var(--text); }
+  .stage-dot { width: 9px; height: 9px; flex: none; border-radius: 50%; border: 2px solid #2a3644; background: transparent; }
+  .stage-row.done .stage-dot { border-color: var(--green); background: var(--green); }
+  .stage-row.active .stage-dot { border-color: var(--green); background: rgba(118, 185, 0, 0.22); animation: stage-pulse 1.15s ease-in-out infinite; }
+  .stage-row.active .stage-text { background: linear-gradient(100deg, var(--text) 20%, #ffffff 42%, var(--text) 64%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: stage-shimmer 1.45s linear infinite; }
+  @keyframes stage-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(118, 185, 0, 0.28); } 50% { box-shadow: 0 0 0 6px rgba(118, 185, 0, 0); } }
+  @keyframes stage-shimmer { to { background-position: -220% 0; } }
+  .skeleton { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin: 14px 0; }
+  .skl { height: 14px; border-radius: 6px; background: #1b2635; margin: 10px 0; animation: skl-pulse 1.3s ease-in-out infinite; }
+  .skl.w40 { width: 40%; } .skl.w70 { width: 70%; } .skl.w90 { width: 90%; }
+  @keyframes skl-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+  footer.footnote { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); margin-top: 28px; padding-top: 14px; }
+  footer.footnote p { margin: 4px 0; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+    .reveal, .stage-row { opacity: 1 !important; transform: none !important; }
+    .stage-row.active .stage-text { background: none; -webkit-text-fill-color: currentColor; animation: none !important; }
+    button.go:hover, button.go:active, .chip:hover, .chip:active { transform: none !important; }
+  }
+  @media (max-width: 720px) {
+    main { padding: 28px 16px 40px; }
+    .how { grid-template-columns: 1fr; }
+    .verdict { flex-direction: column; }
+    .brand svg { width: 44px; height: 44px; }
+    .brand .name { font-size: 30px; }
+    h1.headline { font-size: 34px; }
+    form { flex-wrap: wrap; }
+    .field { flex: 1 1 100%; }
+    button.go { width: 100%; }
+    li.ev { flex-wrap: wrap; }
+    .evmeta { white-space: normal; }
+    .sample .s-body { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="hero">
+    <div class="brand">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 3 9 11v16c0 14.6 9.4 26.9 23 34 13.6-7.1 23-19.4 23-34V11L32 3z" fill="#111826" stroke="#76b900" stroke-width="3.5" stroke-linejoin="round"/><path d="M21 33.5 28.5 41 44 24" fill="none" stroke="#76b900" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="name">Dep<em>Vet</em></div>
+    </div>
+    <h1 class="headline">Know a dependency before you adopt it.</h1>
+    <p class="subline">Every claim gets a source. Conflicts stay visible.</p>
+    <p class="lede">Paste a GitHub repo link or a package name. DepVet returns a sourced risk brief: security history, maintenance health, licence, and a clear adopt, caution, or avoid verdict.</p>
+  </div>
+  <form id="f">
+    <div class="field">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
+      <input id="q" placeholder="https://github.com/expressjs/express or owner/repo" required>
+    </div>
+    <button class="go" type="submit">Vet it</button>
+  </form>
+  <div class="chips">
+    <span class="lbl">Try a sample:</span>
+    <button type="button" class="chip" data-repo="expressjs/express"><b>expressjs/express</b> <span class="ok">healthy, actively maintained</span></button>
+    <button type="button" class="chip" data-repo="request/request"><b>request/request</b> <span class="bad">dead project, still widely installed</span></button>
+  </div>
+  <div class="how">
+    <div class="step">
+      <div class="n">Step 1</div>
+      <h3>Evidence from primary records</h3>
+      <p>GitHub gives the repo record and upkeep signals. OSV gives the advisory history. Tavily searches the live web for incidents and project notices.</p>
+    </div>
+    <div class="step">
+      <div class="n">Step 2</div>
+      <h3>Nano classifies the evidence</h3>
+      <p>NVIDIA Nemotron 3 Nano, the fast model, reads the collected evidence and sorts each claim under security, maintenance, licence, or incidents.</p>
+    </div>
+    <div class="step">
+      <div class="n">Step 3</div>
+      <h3>Ultra writes the verdict</h3>
+      <p>NVIDIA Nemotron 3 Ultra checks the claims for conflicts and writes the verdict from cited claims only. Both models run on Nebius Token Factory.</p>
+    </div>
+  </div>
+  <section class="card sample" id="sample" aria-label="Sample brief">
+    <div class="s-head"><h3>Sample brief</h3><span class="pill">Snapshot</span></div>
+    <p class="muted" style="margin:0">A snapshot of a real DepVet run for <b>expressjs/express</b>, captured Oct 25, 2026. It is a static preview, not live data. Run the sample chip above to get the live brief.</p>
+    <div class="s-body">
+      <div class="ringwrap mini"><div class="ringbox mini">
+        <svg class="ring" width="72" height="72" viewBox="0 0 72 72" aria-hidden="true"><circle class="track" cx="36" cy="36" r="30" fill="none" stroke-width="8"/><circle class="ringval val-adopt" cx="36" cy="36" r="30" fill="none" stroke-width="8" stroke-linecap="round" stroke-dasharray="188.5" stroke-dashoffset="47.1"/></svg>
+        <div class="ringnum mini">75</div></div><div class="ringcap">out of 100</div></div>
+      <div>
+        <div class="s-label">Adopt with routine monitoring</div>
+        <ul class="rows">
+          <li class="ev"><span class="evtext"><span class="cite">[1]</span>69,577 stars, 25,267 forks, 253 open issues, 395 contributors.</span><span class="evmeta"><a href="https://github.com/expressjs/express" target="_blank" rel="noopener">source</a></span></li>
+          <li class="ev"><span class="evtext"><span class="cite">[2]</span>Latest release v5.3.0 published Oct 9, 2026.</span><span class="evmeta"><a href="https://github.com/expressjs/express/releases/tag/v5.3.0" target="_blank" rel="noopener">source</a></span></li>
+          <li class="ev"><span class="evtext"><span class="cite">[3]</span>OSV holds 5 advisories for npm package express (severity mix: 3 MODERATE, 2 LOW).</span><span class="evmeta"><a href="https://osv.dev/list?ecosystem=npm&q=express" target="_blank" rel="noopener">source</a></span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+  <div id="out"></div>
+  <footer class="footnote" id="foot">
+    <p>DepVet checks the dependency before it enters your code. It does not scan your own code. If a source does not respond, the brief marks that check as incomplete instead of filling the gap.</p>
+  </footer>
+</main>
+<script>
+const out = document.getElementById('out');
+const foot = document.getElementById('foot');
+const form = document.getElementById('f');
+const q = document.getElementById('q');
+const stages = [
+  'Reading the repo record on GitHub...',
+  'Checking advisory history in OSV...',
+  'Checking live web reports via Tavily...',
+  'Classifying the evidence with the fast model...',
+  'Writing the verdict...'
+];
+let stageTimer = null;
+const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function setStage(i) {
+  const rows = out.querySelectorAll('.stage-row');
+  rows.forEach((row, idx) => {
+    row.classList.toggle('on', reduceMotion || idx <= i);
+    row.classList.toggle('done', idx < i);
+    row.classList.toggle('active', idx === i);
+    row.setAttribute('aria-hidden', idx <= i ? 'false' : 'true');
+  });
+  const fill = out.querySelector('.stagebar-fill');
+  if (fill) fill.style.width = Math.round(((i + 1) / stages.length) * 100) + '%';
+}
+function startProgress() {
+  const prevH = out.offsetHeight;
+  let h = '<div class="progress" role="status" aria-live="polite"><div class="stagebar"><div class="stagebar-fill"></div></div>' + stages.map((s) => '<div class="stage-row"><span class="stage-dot"></span><span class="stage-text">' + esc(s) + '</span></div>').join('') + '</div>';
+  if (prevH > 200) {
+    h += '<div class="skeleton" style="min-height:' + Math.min(prevH, 900) + 'px" aria-hidden="true"><div class="skl w40"></div><div class="skl w90"></div><div class="skl w70"></div><div class="skl w90"></div><div class="skl w40"></div></div>';
+  }
+  out.innerHTML = h;
+  setStage(0);
+  if (reduceMotion) return;
+  let i = 0;
+  stageTimer = setInterval(() => {
+    i = Math.min(i + 1, stages.length - 1);
+    setStage(i);
+    if (i === stages.length - 1) { clearInterval(stageTimer); stageTimer = null; }
+  }, 1200);
+}
+function stopProgress() {
+  if (stageTimer) { clearInterval(stageTimer); stageTimer = null; }
+}
+async function run(value) {
+  const query = (value || '').trim();
+  if (!query) return;
+  const sampleEl = document.getElementById('sample');
+  if (sampleEl) sampleEl.hidden = true;
+  clearWebNote();
+  startProgress();
+  try {
+    const res = await fetch('/api/brief?repo=' + encodeURIComponent(query));
+    const data = await res.json();
+    stopProgress();
+    if (!res.ok) { out.innerHTML = '<p class="err">' + (data.error || 'Something failed.') + '</p>'; return; }
+    render(data);
+  } catch (err) {
+    stopProgress();
+    out.innerHTML = '<p class="err">Request failed: ' + err.message + '</p>';
+  }
+}
+form.addEventListener('submit', (e) => { e.preventDefault(); run(q.value); });
+for (const chip of document.querySelectorAll('.chip')) {
+  chip.addEventListener('click', () => { q.value = chip.dataset.repo; run(chip.dataset.repo); });
+}
+function esc(s) { return String(s ?? '').replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtNum(n) { const v = Number(n); return Number.isNaN(v) ? esc(n) : v.toLocaleString('en-US'); }
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
+function cleanDesc(s) {
+  return String(s ?? '').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\uFE0F\u200D]/gu, '').replace(/\s+/g, ' ').trim();
+}
+function sevClass(sev) {
+  const s = String(sev || '').toUpperCase();
+  if (s === 'CRITICAL') return 'pill pill-critical';
+  if (s === 'HIGH') return 'pill pill-high';
+  if (s === 'MODERATE') return 'pill pill-moderate';
+  if (s === 'LOW') return 'pill pill-low';
+  return 'pill';
+}
+function clearWebNote() {
+  const old = foot.querySelector('.weblive');
+  if (old) old.remove();
+}
+function bandOf(b) {
+  const label = (b.verdict && b.verdict.label) || '';
+  if (/^Avoid/i.test(label)) return 'avoid';
+  if (/caution/i.test(label)) return 'caution';
+  const s = Number(b.verdict && b.verdict.score);
+  if (!Number.isNaN(s)) return s >= 70 ? 'adopt' : s >= 40 ? 'caution' : 'avoid';
+  return 'adopt';
+}
+function animateVerdict() {
+  const ring = out.querySelector('.ringval');
+  const num = out.querySelector('.score-num');
+  if (!ring || !num) return;
+  const score = Number(num.dataset.score) || 0;
+  const circ = Number(ring.dataset.circ) || (2 * Math.PI * 52);
+  const target = Number(ring.dataset.targetOffset);
+  const finalOffset = Number.isNaN(target) ? (circ * (1 - score / 100)) : target;
+  if (reduceMotion || !window.requestAnimationFrame) {
+    ring.style.strokeDashoffset = String(finalOffset);
+    num.textContent = String(score);
+    return;
+  }
+  try {
+    ring.style.transition = 'none';
+    ring.style.strokeDashoffset = String(circ);
+    num.textContent = '0';
+    void ring.getBoundingClientRect();
+    ring.style.transition = '';
+    requestAnimationFrame(() => {
+      ring.style.strokeDashoffset = String(finalOffset);
+      const started = performance.now();
+      const duration = 1050;
+      const tick = (now) => {
+        const p = Math.min(1, (now - started) / duration);
+        const eased = 1 - Math.pow(1 - p, 3);
+        num.textContent = String(Math.round(score * eased));
+        if (p < 1) requestAnimationFrame(tick);
+        else {
+          num.textContent = String(score);
+          ring.style.strokeDashoffset = String(finalOffset);
+        }
+      };
+      requestAnimationFrame(tick);
+    });
+  } catch (err) {
+    ring.style.transition = '';
+    ring.style.strokeDashoffset = String(finalOffset);
+    num.textContent = String(score);
+  }
+}
+function render(b) {
+  const band = bandOf(b);
+  const score = Math.max(0, Math.min(100, Number(b.verdict.score) || 0));
+  const CIRC = 2 * Math.PI * 52;
+  const off = (CIRC * (1 - score / 100)).toFixed(1);
+  let cardIndex = 0;
+  const delay = () => ' style="--d:' + (cardIndex++ * 70) + 'ms"';
+  let h = '';
+  if (b.meta.modelMode === 'mock') h += '<div class="mock reveal" style="--d:0ms">Demo note: model endpoint not connected in this preview build, verdict shown is a deterministic stand-in.</div>';
+  h += '<div class="card verdict reveal band-' + band + '"' + delay() + '><div class="ringwrap"><div class="ringbox">';
+  h += '<svg class="ring" width="128" height="128" viewBox="0 0 128 128" aria-hidden="true"><circle class="track" cx="64" cy="64" r="52" fill="none" stroke-width="11"/><circle class="ringval val-' + band + '" data-circ="' + CIRC.toFixed(1) + '" data-target-offset="' + off + '" cx="64" cy="64" r="52" fill="none" stroke-width="11" stroke-linecap="round" stroke-dasharray="' + CIRC.toFixed(1) + '" stroke-dashoffset="' + off + '"/></svg>';
+  h += '<div class="ringnum score-num" data-score="' + esc(score) + '">' + esc(score) + '</div></div><div class="ringcap">out of 100</div></div>';
+  h += '<div><div class="label label-' + band + '">' + esc(b.verdict.label) + '</div><ul>';
+  for (const r of b.verdict.rationale || []) h += '<li>' + esc(r) + '</li>';
+  h += '</ul></div></div>';
+  const created = fmtDate(b.subject.createdAt);
+  const pushed = fmtDate(b.subject.pushedAt);
+  h += '<div class="card reveal"' + delay() + '><h3>' + esc(b.subject.owner) + '/' + esc(b.subject.repo) + '</h3><p>' + esc(cleanDesc(b.subject.description)) + '</p>';
+  h += '<p class="muted">Stars ' + fmtNum(b.subject.stars) + ' · Forks ' + fmtNum(b.subject.forks) + ' · Open issues ' + fmtNum(b.subject.openIssues) + ' · Licence ' + esc(b.subject.license ? b.subject.license.spdx : 'none detected') + (created ? ' · Created ' + esc(created) : '') + (pushed ? ' · Last push ' + esc(pushed) : '') + '</p></div>';
+  if (b.contradictions && b.contradictions.length) {
+    h += '<div class="card conflict reveal"' + delay() + '><h3><span class="flag">Conflict</span>Contradictions flagged</h3><ul>';
+    for (const c of b.contradictions) h += '<li>' + esc(c) + '</li>';
+    h += '</ul></div>';
+  }
+  h += '<div class="card reveal"' + delay() + '><h3>Evidence, with sources</h3><ul class="rows">';
+  (b.claims || []).forEach((c, i) => {
+    const tags = (c.riskTags || []).filter((t) => String(t).toUpperCase() !== 'INFO');
+    h += '<li class="ev"><span class="evtext"><span class="cite">[' + (i + 1) + ']</span>' + esc(c.text) + '</span><span class="evmeta"><a href="' + esc(c.source) + '" target="_blank" rel="noopener">source</a>' + tags.map((t) => '<span class="' + sevClass(t) + '">' + esc(t) + '</span>').join('') + '</span></li>';
+  });
+  h += '</ul></div>';
+  if (b.webEvidence && b.webEvidence.items && b.webEvidence.items.length) {
+    h += '<div class="card reveal"' + delay() + '><h3>Live web evidence (Tavily)</h3><ul class="rows">';
+    for (const w of b.webEvidence.items) {
+      const when = fmtDate(w.publishedDate);
+      h += '<li class="ev"><span class="evtext"><a href="' + esc(w.url) + '" target="_blank" rel="noopener">' + esc(w.title) + '</a><br><span class="muted">' + esc(w.excerpt || w.snippet || '') + '</span></span>' + (when ? '<span class="evmeta muted">' + esc(when) + '</span>' : '') + '</li>';
+    }
+    h += '</ul></div>';
+  }
+  if (b.security) {
+    h += '<div class="card reveal"' + delay() + '><h3>Advisory history (OSV)</h3><p>' + esc(b.security.totalAdvisories) + ' advisories on record. Affecting the latest release: ' + esc(b.security.affectingLatest.length) + '.</p><ul class="rows">';
+    for (const v of b.security.recent.slice(0, 5)) {
+      h += '<li class="ev"><span class="evtext"><a href="' + esc(v.url) + '" target="_blank" rel="noopener">' + esc(v.id) + '</a></span><span class="evmeta"><span class="' + sevClass(v.severity) + '">' + esc(v.severity) + '</span></span></li>';
+    }
+    h += '</ul></div>';
+  }
+  out.innerHTML = h;
+  clearWebNote();
+  if (b.webEvidence && !(b.webEvidence.items && b.webEvidence.items.length) && b.webEvidence.note) {
+    const p = document.createElement('p');
+    p.className = 'weblive';
+    p.textContent = b.webEvidence.note;
+    foot.appendChild(p);
+  }
+  animateVerdict();
+}
+</script>
+</body>
+</html>
