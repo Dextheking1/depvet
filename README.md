@@ -21,7 +21,7 @@ DepVet collects structured facts from GitHub and OSV, adds live web evidence fro
 
 Evidence classification runs on Nemotron 3 Nano 30B and the verdict is written by Nemotron 3 Ultra 550B, both served through Nebius Token Factory. Routing is configuration only: MODEL_BASE_URL, MODEL_API_KEY, MODEL_FAST and MODEL_STRONG in the environment. Token Factory made it practical to route each stage to a different sized open model instead of one model for everything.
 
-Honest status of the public demo: the demo at https://depvet.benihacking.top runs with Tavily web evidence live and the model stage in clearly marked mock mode until a Token Factory key is configured on the server. The brief and the UI both say so. Live Nemotron routing is not active in the public demo yet.
+Honest status of the public demo: the demo at https://depvet.benihacking.top runs fully live. Tavily web evidence is live, and the model stage runs live Nemotron routing on Nebius Token Factory (Nano classifies the evidence, Ultra writes the verdict). Every brief is stamped with the model that produced it, and the health endpoint reports the live modes.
 
 Model configuration for Token Factory:
 
