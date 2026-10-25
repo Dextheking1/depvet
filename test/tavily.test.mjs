@@ -15,6 +15,8 @@ import {
   mergeWebEvidence,
   fetchWebEvidence,
   tavilyConfigured,
+  isRelevantItem,
+  cleanEvidenceText,
 } from '../src/sources/tavily.js';
 
 const fixture = (name) =>
@@ -73,6 +75,76 @@ test('merge appends cited web claims, deduped, without mutating the input', () =
   }
   assert.ok(webClaims.some((c) => c.source.includes('zdnet.com')));
   assert.ok(!webClaims.some((c) => c.source === 'https://github.com/dominictarr/event-stream'));
+});
+
+test('query plan anchors on the quoted package and follows the ecosystem', () => {
+  const pypi = buildQueries({ owner: 'psf', repo: 'requests', packageName: 'requests', ecosystem: 'PyPI' });
+  assert.ok(pypi[0].query.startsWith('"requests"'));
+  assert.match(pypi[0].query, /python package/);
+  assert.ok(!/npm/.test(pypi[0].query), 'a PyPI package must not pull npm wording');
+  const npm = buildQueries({ owner: 'expressjs', repo: 'express', packageName: 'express', ecosystem: 'npm' });
+  assert.match(npm[0].query, /npm package/);
+});
+
+test('relevance gate drops generic ecosystem news, keeps package reports', () => {
+  const express = { owner: 'expressjs', repo: 'express', packageName: 'express', ecosystem: 'npm' };
+  const generic = {
+    title: 'Tensorlake npm Package Compromised to Deliver Credential-Stealing Worm',
+    url: 'https://example-news.test/tensorlake-npm-compromised',
+    snippet: 'A trusted news platform reports another npm supply chain attack.',
+  };
+  assert.equal(isRelevantItem(generic, express), false);
+  const onTopic = {
+    title: 'Express 5.3.0 released with security fixes',
+    url: 'https://example.test/express-release',
+    snippet: 'The Express team shipped the release.',
+  };
+  assert.equal(isRelevantItem(onTopic, express), true);
+  const repoPage = { title: 'Issues', url: 'https://github.com/expressjs/express/issues/2499', snippet: '' };
+  assert.equal(isRelevantItem(repoPage, express), true);
+  // A common-word package name in a snippet needs a software cue.
+  const requests = { owner: 'psf', repo: 'requests', packageName: 'requests', ecosystem: 'PyPI' };
+  const collision = {
+    title: 'Studio release notes: October 2026',
+    url: 'https://example.test/studio-release-notes',
+    snippet: 'The Requests workspace now distinguishes the requests you make from the ones you receive.',
+  };
+  assert.equal(isRelevantItem(collision, requests), false);
+  const pythonReport = {
+    title: 'Advisory database roundup',
+    url: 'https://example.test/advisory-roundup',
+    snippet: 'The Python requests library shipped a fix for a session handling flaw.',
+  };
+  assert.equal(isRelevantItem(pythonReport, requests), true);
+});
+
+test('evidence text cleaner strips markdown and page chrome', () => {
+  const raw =
+    '## Metadata ## No one assigned. Skip to content and read the docs. The package was compromised in 2018 when publish rights changed hands. Join our newsletter for updates. See [the advisory](https://example.test/a) for details.';
+  const cleaned = cleanEvidenceText(raw, 400);
+  assert.match(cleaned, /compromised in 2018/);
+  assert.match(cleaned, /See the advisory for details/);
+  assert.ok(!/Skip to content/.test(cleaned));
+  assert.ok(!/newsletter/i.test(cleaned));
+  assert.ok(!/##/.test(cleaned));
+});
+
+test('evidence text cleaner drops GitHub page frame fragments', () => {
+  const raw =
+    'Metadata Metadata No one assigned Labels question. The answer depends on what you are using that for. Can you post some examples of the failing call? Dismiss alert and copy link to share.';
+  const cleaned = cleanEvidenceText(raw, 400);
+  assert.match(cleaned, /answer depends on what you are using that for/);
+  assert.ok(!/No one assigned/.test(cleaned));
+  assert.ok(!/Dismiss alert/.test(cleaned));
+});
+
+test('evidence text cleaner drops session chrome and icon glyphs', () => {
+  const raw =
+    'You signed out in another tab or window. Reload to refresh your session. The maintainer shipped a fix in version 2.0. 70+ million downloads this week.';
+  const cleaned = cleanEvidenceText(raw, 400);
+  assert.match(cleaned, /maintainer shipped a fix/);
+  assert.ok(!/signed out/i.test(cleaned));
+  assert.ok(!/[\uE000-\uF8FF]/.test(cleaned));
 });
 
 test('no key means an honest not-configured result', async () => {

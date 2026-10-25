@@ -86,6 +86,16 @@ function mockVerdict(core) {
   };
 }
 
+// The evidence lines carry bracketed risk tags for the model's
+// benefit; the model sometimes echoes them into its prose. Strip the
+// echoes so the published rationale reads as plain sentences. Pure.
+export function cleanVerdictText(s) {
+  return String(s || '')
+    .replace(/\s*\[(CRITICAL|HIGH|MEDIUM|LOW|INFO)\]\s*/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 async function liveVerdict(core, classifiedClaims) {
   const evidence = classifiedClaims.map((c) => `- [${c.riskTags.join(', ')}] ${c.text} (${c.source})`).join('\n');
   const contra = core.contradictions.map((c) => `- ${c}`).join('\n') || '- none';
@@ -93,11 +103,13 @@ async function liveVerdict(core, classifiedClaims) {
     model: config.model.strong,
     maxTokens: config.model.strongMaxTokens,
     system:
-      'You write the verdict section of a dependency risk brief. Be direct and specific. Reply with JSON only: {"label": string, "score": number 0-100, "summary": string, "rationale": string[]}. The label is one of: "Adopt with routine monitoring", "Adopt with caution", "Avoid, or pin and patch first". Ground every rationale point in the supplied evidence. Never invent facts.',
+      'You write the verdict section of a dependency risk brief. Be direct and specific. Reply with JSON only: {"label": string, "score": number 0-100, "summary": string, "rationale": string[]}. The label is one of: "Adopt with routine monitoring", "Adopt with caution", "Avoid, or pin and patch first". Ground every rationale point in the supplied evidence. Never invent facts. Write rationale points as plain prose sentences: do not repeat the bracketed risk tags from the evidence list in your output.',
     user: `Repository: ${core.subject.owner}/${core.subject.repo}\nSignals: ${JSON.stringify(core.signals)}\nEvidence:\n${evidence}\nContradictions flagged:\n${contra}`,
     temperature: 0.1,
   });
   const parsed = JSON.parse(out.slice(out.indexOf('{'), out.lastIndexOf('}') + 1));
+  if (Array.isArray(parsed.rationale)) parsed.rationale = parsed.rationale.map(cleanVerdictText).filter(Boolean);
+  if (typeof parsed.summary === 'string') parsed.summary = cleanVerdictText(parsed.summary);
   return { ...parsed, producedBy: config.model.strong };
 }
 

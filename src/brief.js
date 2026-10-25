@@ -38,7 +38,7 @@ export async function buildBrief(owner, repo) {
 
   // Live web evidence (Tavily). Never throws: with no key it reports
   // itself not configured and the brief stays structured-sources only.
-  const web = await fetchWebEvidence({ owner, repo, packageName: pkg ? pkg.name : null }).catch(() => ({
+  const web = await fetchWebEvidence({ owner, repo, packageName: pkg ? pkg.name : null, ecosystem: pkg ? pkg.ecosystem : null }).catch(() => ({
     status: 'error',
     note: 'Live web evidence failed this run. Structured sources (GitHub, OSV) only in this brief.',
     queries: [],

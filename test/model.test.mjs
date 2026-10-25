@@ -6,7 +6,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { config } from '../src/config.js';
-import { classifyEvidence, writeVerdict } from '../src/model/route.js';
+import { classifyEvidence, writeVerdict, cleanVerdictText } from '../src/model/route.js';
+
+test('verdict text cleaner strips echoed risk tags, keeps real brackets', () => {
+  assert.equal(
+    cleanVerdictText('Active development: last push 1 day ago [MEDIUM] Repository created in 2009; [INFO] MIT licensed.'),
+    'Active development: last push 1 day ago Repository created in 2009; MIT licensed.',
+  );
+  assert.equal(cleanVerdictText('See claim [1] and GHSA-xxxx for detail.'), 'See claim [1] and GHSA-xxxx for detail.');
+});
 
 const FAST = 'stub-fast-model';
 const STRONG = 'stub-strong-model';

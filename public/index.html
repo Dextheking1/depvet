@@ -264,6 +264,12 @@ async function run(value) {
     stopProgress();
     if (!res.ok) { out.innerHTML = '<p class="err">' + (data.error || 'Something failed.') + '</p>'; return; }
     render(data);
+    // On narrow screens the brief lands well below the fold (hero,
+    // form, chips and the stacked step cards sit above it), so bring
+    // it into view. Desktop layout is unchanged.
+    if (window.innerWidth <= 720) {
+      out.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    }
   } catch (err) {
     stopProgress();
     out.innerHTML = '<p class="err">Request failed: ' + err.message + '</p>';
@@ -288,7 +294,7 @@ function sevClass(sev) {
   const s = String(sev || '').toUpperCase();
   if (s === 'CRITICAL') return 'pill pill-critical';
   if (s === 'HIGH') return 'pill pill-high';
-  if (s === 'MODERATE') return 'pill pill-moderate';
+  if (s === 'MODERATE' || s === 'MEDIUM') return 'pill pill-moderate';
   if (s === 'LOW') return 'pill pill-low';
   return 'pill';
 }
