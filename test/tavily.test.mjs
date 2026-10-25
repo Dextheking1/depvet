@@ -129,6 +129,14 @@ test('evidence text cleaner strips markdown and page chrome', () => {
   assert.ok(!/##/.test(cleaned));
 });
 
+test('evidence text cleaner collapses markdown table bones', () => {
+  const raw = 'Hacker News | past | comments | | | --- --- | | The maintainers discussed disabling pull requests on archived projects.';
+  const cleaned = cleanEvidenceText(raw, 400);
+  assert.match(cleaned, /maintainers discussed disabling pull requests/);
+  assert.ok(!/\|/.test(cleaned));
+  assert.ok(!/-{3,}/.test(cleaned));
+});
+
 test('evidence text cleaner drops GitHub page frame fragments', () => {
   const raw =
     'Metadata Metadata No one assigned Labels question. The answer depends on what you are using that for. Can you post some examples of the failing call? Dismiss alert and copy link to share.';

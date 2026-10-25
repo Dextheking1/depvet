@@ -88,6 +88,9 @@ export function cleanEvidenceText(s, max = 400) {
   let t = String(s || '');
   t = t.replace(/!\[[^\]]*\]\([^)]*\)/g, ' ');
   t = t.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+  // Markdown table bones: runs of pipes and dash separators are
+  // layout, not words.
+  t = t.replace(/\|+/g, ' ').replace(/(^|\s)-{3,}(?=\s|$)/g, ' ');
   t = t.replace(/^\s{0,3}#{1,6}\s+/gm, ' ');
   // Zero-width marks, replacement chars, and private-use glyphs
   // (icon fonts) render as boxes or nothing; they are never content.
